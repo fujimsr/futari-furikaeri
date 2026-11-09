@@ -172,6 +172,11 @@ function gate(title, text, withCopy) {
   g.hidden = false;
 }
 
+// どこかで エラーが おきても まっしろに しない
+window.addEventListener('error', function (e) {
+  if ($('gate').hidden && !CFG) gateRetry('うまく ひらけなかったよ', 'せんせいに つたえてね。（' + (e.message || 'error') + '）');
+});
+
 // ───── はじまり：Safariかどうか・せってい ─────
 function isOtherIOSBrowser() { return /CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(navigator.userAgent); }
 async function boot() {
@@ -180,20 +185,42 @@ async function boot() {
     return;
   }
   if (!SID || !KEY) { gate('アドレスが たりないよ', 'せんせいに もらった アドレスで ひらいてね。', false); return; }
+  if (DEMO) { applyConfig({ lesson: 'キックベース 3じかんめ', questions: ['きょうの めあては なんですか？', 'きょう がんばったことは なんですか？', 'つぎ がんばりたいことは なんですか？'], count: 35, version: 'demo' }); return; }
+  // 前に読みこんだ せっていが あれば、まず それで すぐ はじめる（うらで さいしんに する）
+  var cached = null;
+  try { cached = JSON.parse(localStorage.getItem('ffr_cfg_' + SID) || 'null'); } catch (e) {}
+  if (cached && cached.questions) applyConfig(cached);
+  else $('lesson').textContent = '📡 ほうそうきょくに つないでいます… すこし まってね';
   try {
-    if (DEMO) CFG = { lesson: 'キックベース 3じかんめ', questions: ['きょうの めあては なんですか？', 'きょう がんばったことは なんですか？', 'つぎ がんばりたいことは なんですか？'], count: 35, version: 'demo' };
-    else {
-      var r = await fetch(GAS + '?api=config&k=' + encodeURIComponent(KEY), { cache: 'no-store' });
-      CFG = await r.json();
-      if (!CFG.ok) throw new Error(CFG.error || 'config');
+    var fresh = await loadConfig();
+    try { localStorage.setItem('ffr_cfg_' + SID, JSON.stringify(fresh)); } catch (e) {}
+    if (!cached || JSON.stringify(cached) !== JSON.stringify(fresh)) {
+      if ($('sPair').hidden === false && !S.host && !S.guest) applyConfig(fresh); else CFG = fresh;
     }
   } catch (e) {
-    gate('ほうそうきょくに つながらないよ', 'インターネットを たしかめて、もういちど ひらいてね。\nなおらないときは せんせいに つたえてね。（' + (e.message || e) + '）', false);
-    return;
+    if (cached) return;
+    gateRetry('ほうそうきょくに つながらないよ', 'インターネットを たしかめて、「もういちど」を おしてね。\nなおらないときは せんせいに つたえてね。（' + (e.message || e) + '）');
   }
+}
+function loadConfig() {
+  var ctl = window.AbortController ? new AbortController() : null;
+  var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 20000);
+  return fetch(GAS + '?api=config&k=' + encodeURIComponent(KEY), { cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { return r.json(); })
+    .then(function (j) { clearTimeout(timer); if (!j.ok) throw new Error(j.error === 'key' ? 'かぎが ちがう' : (j.error || 'config')); return j; },
+          function (e) { clearTimeout(timer); throw e.name === 'AbortError' ? new Error('じかんぎれ') : e; });
+}
+function applyConfig(c) {
+  CFG = c;
   $('lesson').textContent = 'きょうの がくしゅう：' + CFG.lesson;
   $('ver').textContent = CFG.version || '';
   buildGrid('hostGrid', 'host'); buildGrid('guestGrid', 'guest'); paintPair();
+}
+function gateRetry(title, text) {
+  gate(title, text, false);
+  var b = document.createElement('button'); b.textContent = '↺ もういちど';
+  b.onclick = function () { location.reload(); };
+  $('gate').append(b);
 }
 
 // ───── ① だれと だれ ─────
