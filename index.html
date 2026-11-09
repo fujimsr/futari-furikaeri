@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-title" content="ふりかえり放送局">
+<title>ふりかえり ほうそうきょく</title>
+<style>
+:root{--studio:#26215C;--studio2:#3C3489;--line:#534AB7;--pale:#CECBF6;--paper:#FAEEDA;--paper-ink:#412402;--paper-line:#EF9F27;--paper-sub:#854F0B;--onair:#E24B4A;--onair2:#A32D2D;--sub-bg:#1b1a19;--sub-fg:#FAC775;--interim:#9b9a96;--host:#EF9F27;--guest:#7F77DD;--ok:#1D9E75}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--studio);color:#fff;font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","BIZ UDPGothic",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+:where(button){font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}
+[hidden]{display:none!important}
+.app{height:100dvh;min-height:100%;display:flex;flex-direction:column;max-width:1280px;margin:0 auto;padding:12px max(18px,env(safe-area-inset-right)) 0 max(18px,env(safe-area-inset-left))}
+.screen{flex:1;display:flex;flex-direction:column;min-height:0}
+
+/* 上の帯 */
+.bar{display:flex;align-items:center;gap:14px;min-height:56px}
+.lamp{font-size:22px;font-weight:800;padding:7px 16px;border-radius:10px;border:3px solid #5f5e5a;background:#2c2c2a;color:#888780;letter-spacing:.04em;white-space:nowrap}
+.lamp.on{background:var(--onair);border-color:#F7C1C1;color:#fff;animation:lamp 1.6s ease-in-out infinite}
+@keyframes lamp{50%{opacity:.78}}
+.corner{font-size:21px;color:var(--pale);white-space:nowrap}
+.cast{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.chip{font-size:18px;font-weight:700;padding:5px 14px;border-radius:999px;white-space:nowrap}
+.chip.host{background:var(--host);color:#412402}
+.chip.guest{background:var(--guest);color:#fff}
+.mail{font-size:16px;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--studio2);border:2px solid var(--line);white-space:nowrap;display:flex;gap:8px;align-items:center}
+.mail.m-ok{color:#9FE1CB;border-color:#1D9E75}
+.mail.m-bad{color:#fff;background:var(--onair2);border-color:#F7C1C1}
+.mail button{border:0;background:#fff;color:var(--onair2);border-radius:999px;padding:4px 12px;font-weight:800;font-size:15px}
+
+/* ① だれと だれ */
+.title{font-size:40px;font-weight:800;margin:6px 0 2px;display:flex;align-items:center;gap:14px}
+.title small{font-size:20px;color:var(--pale);font-weight:400}
+.lessonline{font-size:20px;color:var(--pale);margin-bottom:10px}
+.picks{flex:1;display:flex;gap:18px;min-height:0}
+.pick{flex:1;background:var(--studio2);border:3px solid var(--line);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pick h2{margin:0;font-size:24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pick .now{font-size:20px;color:var(--pale);margin-left:auto}
+.pick .now b{font-size:30px;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px}
+.grid button{height:50px;padding:0;border-radius:12px;border:2px solid var(--line);background:var(--studio);color:#fff;font-size:21px;font-weight:700}
+.host .grid button[aria-pressed="true"]{background:var(--host);border-color:var(--host);color:#412402}
+.guest .grid button[aria-pressed="true"]{background:var(--guest);border-color:#AFA9EC}
+.grid button:disabled{opacity:.25}
+.go{display:block;margin:14px auto 16px;min-height:76px;padding:0 44px;border-radius:22px;border:4px solid #F7C1C1;background:var(--onair);color:#fff;font-size:30px;font-weight:800;box-shadow:0 6px 0 var(--onair2)}
+.go:active{transform:translateY(3px);box-shadow:0 3px 0 var(--onair2)}
+.go:disabled{opacity:.35;box-shadow:none}
+
+/* ② コーナー */
+.stage{flex:1;display:flex;gap:26px;align-items:center;padding:6px 14px 14px;min-height:0}
+.cue{flex:1.25;background:var(--paper);color:var(--paper-ink);border:5px solid var(--paper-line);border-radius:14px;padding:22px 28px;transform:rotate(-2deg);min-width:0}
+.cue .who{font-size:20px;color:var(--paper-sub);font-weight:700}
+.cue .q{font-size:clamp(34px,4.4vw,50px);line-height:1.45;font-weight:800;margin:8px 0 0;word-break:keep-all;overflow-wrap:anywhere}
+.side{flex:1;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.mic{width:min(250px,30vw);aspect-ratio:1;border-radius:50%;border:10px solid #AFA9EC;background:var(--line);color:#fff;font-size:32px;font-weight:800;line-height:1.3;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 0 #26215C}
+.mic .ico{font-size:54px;line-height:1}
+.mic.on{background:var(--onair);border-color:#F7C1C1;box-shadow:0 8px 0 var(--onair2)}
+.mic:active{transform:translateY(4px)}
+.hint{font-size:20px;color:var(--pale);text-align:center;min-height:28px}
+.after{display:flex;gap:12px;width:100%}
+.after button{flex:1;min-height:78px;border-radius:20px;font-size:24px;font-weight:800}
+.redo{border:3px solid var(--pale);background:transparent;color:#fff}
+.okb{border:3px solid #9FE1CB;background:var(--ok);color:#fff;box-shadow:0 5px 0 #0F6E56}
+.subs{flex:0 0 auto;height:150px;margin:0 -18px;background:var(--sub-bg);display:flex;align-items:center;justify-content:center;padding:10px 40px}
+.subs p{margin:0;max-height:130px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;font-size:clamp(28px,3.6vw,40px);line-height:1.4;font-weight:800;color:var(--sub-fg);text-align:center;width:100%}
+.subs .interim{color:var(--interim)}
+.subs .idle{color:#5f5e5a;font-weight:400}
+
+/* CM・おわり */
+.cm{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.cm .big{font-size:96px;font-weight:900;letter-spacing:.1em;color:var(--sub-fg)}
+.cm p{font-size:28px;margin:0;color:var(--pale)}
+.cm.play .big{animation:cm .9s ease-out both}
+@keyframes cm{from{transform:scale(.6);opacity:0}40%{transform:scale(1.06);opacity:1}to{transform:scale(1)}}
+.end{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding-bottom:20px}
+.end h2{font-size:44px;margin:0}
+.end .recap{width:min(820px,100%);background:var(--sub-bg);border-radius:16px;padding:14px 22px;display:grid;gap:8px}
+.end .recap div{font-size:20px;color:var(--sub-fg);line-height:1.5}
+.end .recap span{color:var(--pale);font-size:16px;display:block}
+.end p{font-size:22px;margin:0;color:var(--pale);text-align:center}
+
+/* Safariで ひらいてね・エラー */
+.gate{position:fixed;inset:0;background:var(--studio);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px;text-align:center;z-index:5}
+.gate h2{font-size:40px;margin:0}
+.gate p{font-size:22px;margin:0;color:var(--pale);line-height:1.7;white-space:pre-line}
+.gate button{min-height:64px;padding:0 30px;border-radius:18px;border:3px solid var(--pale);background:var(--studio2);color:#fff;font-size:22px;font-weight:700}
+@media (prefers-reduced-motion:reduce){.lamp.on,.cm.play .big{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ① だれと だれ -->
+  <section class="screen" id="sPair">
+    <div class="bar">
+      <div class="title">📺 ふりかえり ほうそうきょく <small id="ver"></small></div>
+      <div class="cast"><div class="mail" id="mail0" hidden></div></div>
+    </div>
+    <div class="lessonline" id="lesson"></div>
+    <div class="picks">
+      <div class="pick host"><h2><span class="chip host">しかい</span>しつもんを よむ ひと<span class="now" id="hostNow">ばんごうを おしてね</span></h2><div class="grid" id="hostGrid"></div></div>
+      <div class="pick guest"><h2><span class="chip guest">ゲスト</span>こたえる ひと<span class="now" id="guestNow">ばんごうを おしてね</span></h2><div class="grid" id="guestGrid"></div></div>
+    </div>
+    <button class="go" id="start" disabled>● ほうそう スタート</button>
+  </section>
+
+  <!-- ② コーナー -->
+  <section class="screen" id="sCorner" hidden>
+    <div class="bar">
+      <div class="lamp" id="lamp">じゅんび ちゅう</div>
+      <div class="corner" id="corner"></div>
+      <div class="cast"><span class="chip host" id="cHost"></span><span class="chip guest" id="cGuest"></span><div class="mail" id="mail1" hidden></div></div>
+    </div>
+    <div class="stage">
+      <div class="cue"><div class="who" id="cueWho"></div><p class="q" id="cueQ"></p></div>
+      <div class="side">
+        <button class="mic" id="mic"><span class="ico">🎙</span><span id="micLabel">はなす</span></button>
+        <div class="hint" id="hint"></div>
+        <div class="after" id="after" hidden>
+          <button class="redo" id="redo">↺ もういちど</button>
+          <button class="okb" id="okb">OK！ つぎへ</button>
+        </div>
+      </div>
+    </div>
+    <div class="subs"><p id="subs"></p></div>
+  </section>
+
+  <!-- CM -->
+  <section class="screen cm" id="sCM" hidden><div class="big">CM</div><p id="cmText"></p></section>
+
+  <!-- ③ おわり -->
+  <section class="screen end" id="sEnd" hidden>
+    <div class="bar" style="width:100%"><div class="cast"><div class="mail" id="mail2" hidden></div></div></div>
+    <h2 id="endTitle"></h2>
+    <div class="recap" id="recap"></div>
+    <p id="endText"></p>
+    <button class="go" id="next"></button>
+  </section>
+</div>
+
+<div class="gate" id="gate" hidden></div>
+
+<script>
+'use strict';
+var $ = function (id) { return document.getElementById(id); };
+var Q = new URLSearchParams(location.search);
+var SID = Q.get('s') || '', KEY = Q.get('k') || '';
+var DEMO = SID === 'demo';
+var GAS = 'https://script.google.com/macros/s/' + encodeURIComponent(SID) + '/exec';
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var CFG = null;
+var S = { host: 0, guest: 0, done: [], qi: 0, answers: [], queue: [], sending: false };
+var R = { rec: null, on: false, final: '', t0: 0, sec: 0 };
+
+function show(id) { ['sPair', 'sCorner', 'sCM', 'sEnd'].forEach(function (s) { $(s).hidden = s !== id; }); }
+function uuid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+}
+function gate(title, text, withCopy) {
+  var g = $('gate'); g.replaceChildren();
+  var h = document.createElement('h2'); h.textContent = title; g.append(h);
+  var p = document.createElement('p'); p.textContent = text; g.append(p);
+  if (withCopy) {
+    var b = document.createElement('button'); b.textContent = 'この ページの アドレスを コピー';
+    b.onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(location.href) : Promise.reject()).then(function () { b.textContent = 'コピー しました'; }).catch(function () { b.textContent = 'せんせいに つたえてね'; }); };
+    g.append(b);
+  }
+  g.hidden = false;
+}
+
+// ───── はじまり：Safariかどうか・せってい ─────
+function isOtherIOSBrowser() { return /CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(navigator.userAgent); }
+async function boot() {
+  if (!DEMO && (isOtherIOSBrowser() || !SR)) {
+    gate('Safari（サファリ）で ひらいてね', 'この ほうそうきょくは Safari でしか こえが もじに なりません。\nアドレスを コピーして、Safari に はりつけてね。', true);
+    return;
+  }
+  if (!SID || !KEY) { gate('アドレスが たりないよ', 'せんせいに もらった アドレスで ひらいてね。', false); return; }
+  try {
+    if (DEMO) CFG = { lesson: 'キックベース 3じかんめ', questions: ['きょうの めあては なんですか？', 'きょう がんばったことは なんですか？', 'つぎ がんばりたいことは なんですか？'], count: 35, version: 'demo' };
+    else {
+      var r = await fetch(GAS + '?api=config&k=' + encodeURIComponent(KEY), { cache: 'no-store' });
+      CFG = await r.json();
+      if (!CFG.ok) throw new Error(CFG.error || 'config');
+    }
+  } catch (e) {
+    gate('ほうそうきょくに つながらないよ', 'インターネットを たしかめて、もういちど ひらいてね。\nなおらないときは せんせいに つたえてね。（' + (e.message || e) + '）', false);
+    return;
+  }
+  $('lesson').textContent = 'きょうの がくしゅう：' + CFG.lesson;
+  $('ver').textContent = CFG.version || '';
+  buildGrid('hostGrid', 'host'); buildGrid('guestGrid', 'guest'); paintPair();
+}
+
+// ───── ① だれと だれ ─────
+function buildGrid(id, kind) {
+  var g = $(id); g.replaceChildren();
+  for (var n = 1; n <= CFG.count; n++) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = n; b.dataset.n = n;
+    b.addEventListener('click', function (ev) { pick(kind, Number(ev.currentTarget.dataset.n)); });
+    g.append(b);
+  }
+}
+function pick(kind, n) {
+  if (kind === 'host') { S.host = S.host === n ? 0 : n; if (S.guest === S.host) S.guest = 0; }
+  else { S.guest = S.guest === n ? 0 : n; if (S.host === S.guest) S.host = 0; }
+  paintPair();
+}
+function paintPair() {
+  [['hostGrid', S.host, S.guest], ['guestGrid', S.guest, S.host]].forEach(function (x) {
+    $(x[0]).querySelectorAll('button').forEach(function (b) { var n = Number(b.dataset.n); b.setAttribute('aria-pressed', n === x[1] ? 'true' : 'false'); b.disabled = n === x[2]; });
+  });
+  $('hostNow').innerHTML = S.host ? '<b>' + S.host + '</b> ばん' : 'ばんごうを おしてね';
+  $('guestNow').innerHTML = S.guest ? '<b>' + S.guest + '</b> ばん' : 'ばんごうを おしてね';
+  $('start').disabled = !(S.host && S.guest);
+}
+$('start').addEventListener('click', function () { S.done = []; startShow(); });
+
+// ───── ② コーナー ─────
+function startShow() { S.qi = 0; S.answers = []; show('sCorner'); renderCorner(); }
+function renderCorner() {
+  $('corner').textContent = 'コーナー ' + (S.qi + 1) + ' / 3';
+  $('cHost').textContent = 'しかい ' + S.host + 'ばん';
+  $('cGuest').textContent = 'ゲスト ' + S.guest + 'ばん';
+  $('cueWho').textContent = 'しかい（' + S.host + 'ばん）が よむ カンペ';
+  $('cueQ').textContent = CFG.questions[S.qi];
+  R.final = ''; R.sec = 0;
+  setMic('idle'); paintSubs('');
+}
+function setMic(state) {
+  var on = state === 'on';
+  $('mic').classList.toggle('on', on);
+  $('lamp').classList.toggle('on', on);
+  $('lamp').textContent = on ? '● ON AIR' : 'じゅんび ちゅう';
+  $('micLabel').textContent = on ? 'おわる' : (state === 'after' ? 'もういちど' : 'はなす');
+  $('mic').hidden = state === 'after';
+  $('after').hidden = state !== 'after';
+  $('hint').textContent = state === 'on' ? 'はなしおわったら ボタンを おしてね' : state === 'after' ? (R.final ? 'じまくを よんで たしかめてね' : 'もじに ならなかったよ。もういちど はなしてね') : 'しかいが よんだら、ゲストが ボタンを おして はなす';
+  $('okb').hidden = state === 'after' && !R.final;
+}
+function paintSubs(interim) {
+  var p = $('subs'); p.replaceChildren();
+  if (!R.final && !interim) {
+    var s = document.createElement('span'); s.className = 'idle';
+    s.textContent = R.on ? '（きいています…）' : 'ここに じまくが でるよ';
+    p.append(s); return;
+  }
+  var box = document.createElement('span');
+  box.append(document.createTextNode(R.final));
+  if (interim) { var i = document.createElement('span'); i.className = 'interim'; i.textContent = interim; box.append(i); }
+  p.append(box);
+}
+
+function startListening() {
+  var rec = new SR();
+  rec.lang = 'ja-JP'; rec.interimResults = true; rec.continuous = true;
+  rec.onresult = function (e) {
+    var interim = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      var t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) R.final += t; else interim += t;
+    }
+    paintSubs(interim);
+  };
+  rec.onerror = function (e) {
+    if (e.error === 'no-speech' || e.error === 'aborted') return;
+    R.on = false;
+    $('hint').textContent = 'うまく きこえなかったよ（' + e.error + '）。もういちど おしてね';
+  };
+  rec.onend = function () {
+    if (R.on) {
+      try { startListening(); return; } catch (err) { R.on = false; }
+    }
+    stopped();
+  };
+  R.rec = rec;
+  rec.start();
+}
+function stopped() {
+  if (R.t0) { R.sec += (Date.now() - R.t0) / 1000; R.t0 = 0; }
+  R.on = false; paintSubs(''); setMic('after');
+}
+$('mic').addEventListener('click', function () {
+  if (R.on) { R.on = false; try { R.rec.stop(); } catch (e) { stopped(); } return; }
+  R.on = true; R.t0 = Date.now(); setMic('on'); paintSubs('');
+  try { if (DEMO) demoListen(); else startListening(); }
+  catch (err) { R.on = false; stopped(); $('hint').textContent = 'はじめられなかったよ。もういちど おしてね'; }
+});
+$('redo').addEventListener('click', function () { R.final = ''; R.sec = 0; paintSubs(''); setMic('idle'); });
+$('okb').addEventListener('click', function () {
+  var text = R.final.trim();
+  if (!text) return;
+  S.answers[S.qi] = text;
+  enqueue({ id: uuid(), k: KEY, child: S.guest, reader: S.host, q: S.qi, lesson: CFG.lesson, question: CFG.questions[S.qi], text: text, sec: Math.round(R.sec) });
+  if (S.qi < 2) { S.qi++; playCM(); } else finishGuest();
+});
+function playCM() {
+  show('sCM'); $('cmText').textContent = 'つぎは コーナー ' + (S.qi + 1);
+  var cm = $('sCM'); cm.classList.remove('play'); void cm.offsetWidth; cm.classList.add('play');
+  setTimeout(function () { show('sCorner'); renderCorner(); }, 1100);
+}
+
+// ───── おくる（うしろで じゅんばんに） ─────
+function enqueue(payload) { S.queue.push({ state: 'wait', tries: 0, payload: payload }); pump(); }
+async function post(payload) {
+  if (DEMO) { window.__sent = (window.__sent || []).concat([payload]); if (window.__failNext) { window.__failNext--; throw new Error('demo fail'); } return; }
+  var body = JSON.stringify(payload);
+  var res;
+  try {
+    res = await fetch(GAS, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, redirect: 'follow' });
+  } catch (e) {
+    // 返事が読めない環境でも届くように、返事を見ない送り方でもう一度送り、表に入ったかを別に問い合わせる
+    await fetch(GAS, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body });
+    await new Promise(function (ok) { setTimeout(ok, 1500); });
+    var c = await (await fetch(GAS + '?api=check&k=' + encodeURIComponent(KEY) + '&id=' + encodeURIComponent(payload.id), { cache: 'no-store' })).json();
+    if (!c.ok || !c.found) throw new Error('not saved');
+    return;
+  }
+  var j = await res.json();
+  if (!j.ok) { var err = new Error(j.error || 'ng'); err.fatal = j.error === 'key' || j.error === 'shape'; throw err; }
+}
+function pump() {
+  paintMail();
+  if (S.sending) return;
+  var job = S.queue.find(function (j) { return j.state === 'wait'; });
+  if (!job) return;
+  S.sending = true; job.state = 'send'; paintMail();
+  post(job.payload).then(function () {
+    job.state = 'done'; S.sending = false; pump();
+  }).catch(function (err) {
+    S.sending = false; job.tries++;
+    if (job.tries < 4 && !err.fatal) { job.state = 'retry'; setTimeout(function () { job.state = 'wait'; pump(); }, [2000, 5000, 10000][job.tries - 1]); }
+    else job.state = 'fail';
+    paintMail(); pump();
+  });
+}
+function counts() {
+  var c = { left: 0, fail: 0 };
+  S.queue.forEach(function (j) { if (j.state === 'fail') c.fail++; else if (j.state !== 'done') c.left++; });
+  return c;
+}
+function paintMail() {
+  var c = counts();
+  ['mail0', 'mail1', 'mail2'].forEach(function (id) {
+    var m = $(id);
+    if (!S.queue.length) { m.hidden = true; return; }
+    m.hidden = false; m.className = 'mail'; m.replaceChildren();
+    if (c.fail) {
+      m.classList.add('m-bad'); m.append('⚠ とどいていない ' + c.fail);
+      var b = document.createElement('button'); b.textContent = 'もういちど おくる';
+      b.onclick = function () { S.queue.forEach(function (j) { if (j.state === 'fail') { j.state = 'wait'; j.tries = 0; } }); pump(); };
+      m.append(b);
+    } else if (c.left) m.append('📡 そうしん ちゅう… ' + c.left);
+    else { m.classList.add('m-ok'); m.append('✓ せんせいに とどいたよ'); }
+  });
+}
+
+// ───── ③ おわり・こうたい ─────
+function finishGuest() {
+  S.done.push(S.guest);
+  show('sEnd');
+  $('endTitle').textContent = '📺 ほうそう しゅうりょう！ ゲスト ' + S.guest + 'ばんさん';
+  var rc = $('recap'); rc.replaceChildren();
+  S.answers.forEach(function (a, i) {
+    var d = document.createElement('div'); var s = document.createElement('span');
+    s.textContent = 'コーナー ' + (i + 1) + '：' + CFG.questions[i]; d.append(s, document.createTextNode(a)); rc.append(d);
+  });
+  var both = S.done.indexOf(S.host) >= 0;
+  $('endText').textContent = both ? 'ふたりとも おわったよ。ありがとう！' : 'つぎは こうたい。' + S.host + 'ばんさんが ゲスト、' + S.guest + 'ばんさんが しかい。';
+  $('next').textContent = both ? 'さいしょの がめんに もどる' : '● こうたいして ほうそう スタート';
+  $('next').dataset.both = both ? '1' : '';
+}
+$('next').addEventListener('click', function () {
+  if ($('next').dataset.both) { S.host = 0; S.guest = 0; S.done = []; paintPair(); show('sPair'); }
+  else { var h = S.host; S.host = S.guest; S.guest = h; startShow(); }
+});
+
+window.addEventListener('beforeunload', function (e) { var c = counts(); if (c.left || c.fail) { e.preventDefault(); e.returnValue = ''; } });
+
+// 確認用（?s=demo）：音声認識の代わりに決まった文を流す
+function demoListen() {
+  var words = ['きょうは ', 'パスを ', 'たくさん つないで ', 'ゴールまで いけました。'], i = 0;
+  R.rec = { stop: function () { clearInterval(R.demo); stopped(); } };
+  R.demo = setInterval(function () { if (i < words.length) { R.final += words[i++]; paintSubs(''); } }, 250);
+}
+
+boot();
+</script>
+</body>
+</html>
