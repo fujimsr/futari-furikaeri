@@ -256,8 +256,8 @@ function renderCorner() {
   $('cGuest').textContent = 'ゲスト ' + S.guest + 'ばん';
   $('cueWho').textContent = 'しかい（' + S.host + 'ばん）が よむ カンペ';
   $('cueQ').textContent = CFG.questions[S.qi];
-  R.final = ''; R.sec = 0;
-  setMic('idle'); paintSubs('');
+  R.final = ''; R.sFinal = ''; R.sInterim = ''; R.sec = 0;
+  setMic('idle'); paintSubs();
 }
 function setMic(state) {
   var on = state === 'on';
@@ -270,36 +270,50 @@ function setMic(state) {
   $('hint').textContent = state === 'on' ? 'はなしおわったら ボタンを おしてね' : state === 'after' ? (R.final ? 'じまくを よんで たしかめてね' : 'もじに ならなかったよ。もういちど はなしてね') : 'しかいが よんだら、ゲストが ボタンを おして はなす';
   $('okb').hidden = state === 'after' && !R.final;
 }
-function paintSubs(interim) {
+// R.final：前の区切りまでで 決まった もじ
+// R.sFinal / R.sInterim：いま きいている 区切りの 確定ぶん／とちゅうの ぶん
+// Safariは おわりの ことばを 「とちゅう」の まま おわることが あるので、とちゅうの ぶんも すてずに のこす
+function paintSubs() {
+  var fin = R.final + (R.sFinal || ''), interim = R.sInterim || '';
   var p = $('subs'); p.replaceChildren();
-  if (!R.final && !interim) {
+  if (!fin && !interim) {
     var s = document.createElement('span'); s.className = 'idle';
     s.textContent = R.on ? '（きいています…）' : 'ここに じまくが でるよ';
     p.append(s); return;
   }
   var box = document.createElement('span');
-  box.append(document.createTextNode(R.final));
+  box.append(document.createTextNode(fin));
   if (interim) { var i = document.createElement('span'); i.className = 'interim'; i.textContent = interim; box.append(i); }
   p.append(box);
+}
+function commitSession() {
+  R.final += (R.sFinal || '') + (R.sInterim || '');
+  R.sFinal = ''; R.sInterim = '';
 }
 
 function startListening() {
   var rec = new SR();
   rec.lang = 'ja-JP'; rec.interimResults = true; rec.continuous = true;
   rec.onresult = function (e) {
-    var interim = '';
-    for (var i = e.resultIndex; i < e.results.length; i++) {
+    if (R.rec !== rec) return;
+    // 毎回 ぜんぶの けっかから つくりなおす（Safariは まえの けっかを おくりなおすことが あるため）
+    var f = '', it = '';
+    for (var i = 0; i < e.results.length; i++) {
       var t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) R.final += t; else interim += t;
+      if (e.results[i].isFinal) f += t; else it += t;
     }
-    paintSubs(interim);
+    R.sFinal = f; R.sInterim = it;
+    paintSubs();
   };
   rec.onerror = function (e) {
+    if (R.rec !== rec) return;
     if (e.error === 'no-speech' || e.error === 'aborted') return;
     R.on = false;
-    $('hint').textContent = 'うまく きこえなかったよ（' + e.error + '）。もういちど おしてね';
+    R.err = e.error;
   };
   rec.onend = function () {
+    if (R.rec !== rec) return;
+    commitSession();
     if (R.on) {
       try { startListening(); return; } catch (err) { R.on = false; }
     }
@@ -309,16 +323,28 @@ function startListening() {
   rec.start();
 }
 function stopped() {
+  if (R.stopTimer) { clearTimeout(R.stopTimer); R.stopTimer = 0; }
+  if (!$('after').hidden) return;
+  commitSession();
+  R.rec = null;
   if (R.t0) { R.sec += (Date.now() - R.t0) / 1000; R.t0 = 0; }
-  R.on = false; paintSubs(''); setMic('after');
+  R.on = false; paintSubs(); setMic('after');
+  if (R.err && !R.final) $('hint').textContent = 'うまく きこえなかったよ（' + R.err + '）。もういちど おしてね';
+  R.err = '';
 }
 $('mic').addEventListener('click', function () {
-  if (R.on) { R.on = false; try { R.rec.stop(); } catch (e) { stopped(); } return; }
-  R.on = true; R.t0 = Date.now(); setMic('on'); paintSubs('');
+  if (R.on) {
+    R.on = false;
+    // さいごの ことばが とどくのを まつ。とまらない ときも 2びょうで おわりに する
+    R.stopTimer = setTimeout(stopped, 2000);
+    try { R.rec.stop(); } catch (e) { stopped(); }
+    return;
+  }
+  R.on = true; R.err = ''; R.t0 = Date.now(); setMic('on'); paintSubs();
   try { if (DEMO) demoListen(); else startListening(); }
   catch (err) { R.on = false; stopped(); $('hint').textContent = 'はじめられなかったよ。もういちど おしてね'; }
 });
-$('redo').addEventListener('click', function () { R.final = ''; R.sec = 0; paintSubs(''); setMic('idle'); });
+$('redo').addEventListener('click', function () { R.final = ''; R.sFinal = ''; R.sInterim = ''; R.sec = 0; paintSubs(); setMic('idle'); });
 $('okb').addEventListener('click', function () {
   var text = R.final.trim();
   if (!text) return;
