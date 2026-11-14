@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="apple-mobile-web-app-title" content="ふりかえり放送局">
-<title>ふりかえり ほうそうきょく</title>
+<meta name="apple-mobile-web-app-title" content="ふりかえりインタビュー">
+<title>ふりかえり インタビュー</title>
 <style>
 :root{--studio:#26215C;--studio2:#3C3489;--line:#534AB7;--pale:#CECBF6;--paper:#FAEEDA;--paper-ink:#412402;--paper-line:#EF9F27;--paper-sub:#854F0B;--onair:#E24B4A;--onair2:#A32D2D;--sub-bg:#1b1a19;--sub-fg:#FAC775;--interim:#9b9a96;--host:#EF9F27;--guest:#7F77DD;--ok:#1D9E75}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -36,6 +36,9 @@ body{overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 .title small{font-size:20px;color:var(--pale);font-weight:400}
 .lessonline{font-size:20px;color:var(--pale);margin-bottom:10px}
 .picks{flex:1;display:flex;gap:18px;min-height:0}
+.picks.solo .pick.host{display:none}
+.picks.solo .grid{grid-template-columns:repeat(10,minmax(0,1fr))}
+.picks.solo .grid button{height:58px;font-size:24px}
 .pick{flex:1;background:var(--studio2);border:3px solid var(--line);border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .pick h2{margin:0;font-size:24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pick .now{font-size:20px;color:var(--pale);margin-left:auto}
@@ -96,15 +99,15 @@ body{overscroll-behavior:none;user-select:none;-webkit-user-select:none}
   <!-- ① だれと だれ -->
   <section class="screen" id="sPair">
     <div class="bar">
-      <div class="title">📺 ふりかえり ほうそうきょく <small id="ver"></small></div>
+      <div class="title">🎙 ふりかえり インタビュー <small id="ver"></small></div>
       <div class="cast"><div class="mail" id="mail0" hidden></div></div>
     </div>
     <div class="lessonline" id="lesson"></div>
-    <div class="picks">
-      <div class="pick host"><h2><span class="chip host">しかい</span>しつもんを よむ ひと<span class="now" id="hostNow">ばんごうを おしてね</span></h2><div class="grid" id="hostGrid"></div></div>
-      <div class="pick guest"><h2><span class="chip guest">ゲスト</span>こたえる ひと<span class="now" id="guestNow">ばんごうを おしてね</span></h2><div class="grid" id="guestGrid"></div></div>
+    <div class="picks" id="picks">
+      <div class="pick host"><h2><span class="chip host">インタビュアー</span>しつもんを よむ ひと<span class="now" id="hostNow">ばんごうを おしてね</span></h2><div class="grid" id="hostGrid"></div></div>
+      <div class="pick guest"><h2><span class="chip guest">ゲスト</span><span id="guestLabel">こたえる ひと</span><span class="now" id="guestNow">ばんごうを おしてね</span></h2><div class="grid" id="guestGrid"></div></div>
     </div>
-    <button class="go" id="start" disabled>● ほうそう スタート</button>
+    <button class="go" id="start" disabled>● インタビュー スタート</button>
   </section>
 
   <!-- ② コーナー -->
@@ -149,6 +152,8 @@ var $ = function (id) { return document.getElementById(id); };
 var Q = new URLSearchParams(location.search);
 var SID = Q.get('s') || '', KEY = Q.get('k') || '';
 var DEMO = SID === 'demo';
+function isSolo() { return CFG && CFG.mode === 'solo'; }
+function nQ() { return CFG && CFG.questions ? CFG.questions.length : 3; }
 var GAS = 'https://script.google.com/macros/s/' + encodeURIComponent(SID) + '/exec';
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var CFG = null;
@@ -181,25 +186,25 @@ window.addEventListener('error', function (e) {
 function isOtherIOSBrowser() { return /CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(navigator.userAgent); }
 async function boot() {
   if (!DEMO && (isOtherIOSBrowser() || !SR)) {
-    gate('Safari（サファリ）で ひらいてね', 'この ほうそうきょくは Safari でしか こえが もじに なりません。\nアドレスを コピーして、Safari に はりつけてね。', true);
+    gate('Safari（サファリ）で ひらいてね', 'この アプリは Safari でしか こえが もじに なりません。\nアドレスを コピーして、Safari に はりつけてね。', true);
     return;
   }
   if (!SID || !KEY) { gate('アドレスが たりないよ', 'せんせいに もらった アドレスで ひらいてね。', false); return; }
-  if (DEMO) { applyConfig({ lesson: 'キックベース 3じかんめ', questions: ['きょうの めあては なんですか？', 'きょう がんばったことは なんですか？', 'つぎ がんばりたいことは なんですか？'], count: 35, version: 'demo' }); return; }
+  if (DEMO) { var dq = ['きょうの めあては なんですか？', 'きょう がんばったことは なんですか？', 'つぎ がんばりたいことは なんですか？', 'ともだちの よかったところは どこですか？', 'つぎの じかんに ためしたいことは なんですか？']; applyConfig({ lesson: 'キックベース 3じかんめ', questions: dq.slice(0, Math.min(5, Math.max(1, Number(Q.get('n')) || 3))), mode: Q.get('mode') === 'solo' ? 'solo' : 'pair', count: 35, version: 'demo' }); return; }
   // 前に読みこんだ せっていが あれば、まず それで すぐ はじめる（うらで さいしんに する）
   var cached = null;
-  try { cached = JSON.parse(localStorage.getItem('ffr_cfg_' + SID) || 'null'); } catch (e) {}
+  try { cached = JSON.parse(localStorage.getItem('ffr_cfg_' + SID + '_' + KEY) || 'null'); } catch (e) {}
   if (cached && cached.questions) applyConfig(cached);
-  else $('lesson').textContent = '📡 ほうそうきょくに つないでいます… すこし まってね';
+  else $('lesson').textContent = '📡 スタジオに つないでいます… すこし まってね';
   try {
     var fresh = await loadConfig();
-    try { localStorage.setItem('ffr_cfg_' + SID, JSON.stringify(fresh)); } catch (e) {}
+    try { localStorage.setItem('ffr_cfg_' + SID + '_' + KEY, JSON.stringify(fresh)); } catch (e) {}
     if (!cached || JSON.stringify(cached) !== JSON.stringify(fresh)) {
       if ($('sPair').hidden === false && !S.host && !S.guest) applyConfig(fresh); else CFG = fresh;
     }
   } catch (e) {
     if (cached) return;
-    gateRetry('ほうそうきょくに つながらないよ', 'インターネットを たしかめて、「もういちど」を おしてね。\nなおらないときは せんせいに つたえてね。（' + (e.message || e) + '）');
+    gateRetry('スタジオに つながらないよ', 'インターネットを たしかめて、「もういちど」を おしてね。\nなおらないときは せんせいに つたえてね。（' + (e.message || e) + '）');
   }
 }
 function loadConfig() {
@@ -212,7 +217,12 @@ function loadConfig() {
 }
 function applyConfig(c) {
   CFG = c;
-  $('lesson').textContent = 'きょうの がくしゅう：' + CFG.lesson;
+  if (!Array.isArray(CFG.questions) || !CFG.questions.length) CFG.questions = ['きょうの がくしゅうで こころに のこったことは なんですか？'];
+  CFG.questions = CFG.questions.slice(0, 5);
+  $('lesson').textContent = 'きょうの がくしゅう：' + CFG.lesson + (isSolo() ? '　（ひとりで こたえる）' : '');
+  $('picks').classList.toggle('solo', isSolo());
+  $('guestLabel').textContent = isSolo() ? 'こたえる ひと（じぶんの ばんごう）' : 'こたえる ひと';
+  if (isSolo()) S.host = 0;
   $('ver').textContent = CFG.version || '';
   buildGrid('hostGrid', 'host'); buildGrid('guestGrid', 'guest'); paintPair();
 }
@@ -244,17 +254,18 @@ function paintPair() {
   });
   $('hostNow').innerHTML = S.host ? '<b>' + S.host + '</b> ばん' : 'ばんごうを おしてね';
   $('guestNow').innerHTML = S.guest ? '<b>' + S.guest + '</b> ばん' : 'ばんごうを おしてね';
-  $('start').disabled = !(S.host && S.guest);
+  $('start').disabled = isSolo() ? !S.guest : !(S.host && S.guest);
 }
 $('start').addEventListener('click', function () { S.done = []; startShow(); });
 
 // ───── ② コーナー ─────
 function startShow() { S.qi = 0; S.answers = []; show('sCorner'); renderCorner(); }
 function renderCorner() {
-  $('corner').textContent = 'コーナー ' + (S.qi + 1) + ' / 3';
-  $('cHost').textContent = 'しかい ' + S.host + 'ばん';
+  $('corner').textContent = 'コーナー ' + (S.qi + 1) + ' / ' + nQ();
+  $('cHost').hidden = isSolo();
+  $('cHost').textContent = 'インタビュアー ' + S.host + 'ばん';
   $('cGuest').textContent = 'ゲスト ' + S.guest + 'ばん';
-  $('cueWho').textContent = 'しかい（' + S.host + 'ばん）が よむ カンペ';
+  $('cueWho').textContent = isSolo() ? 'じぶんで よむ カンペ' : 'インタビュアー（' + S.host + 'ばん）が よむ カンペ';
   $('cueQ').textContent = CFG.questions[S.qi];
   R.final = ''; R.sFinal = ''; R.sInterim = ''; R.sec = 0;
   setMic('idle'); paintSubs();
@@ -267,7 +278,7 @@ function setMic(state) {
   $('micLabel').textContent = on ? 'おわる' : (state === 'after' ? 'もういちど' : 'はなす');
   $('mic').hidden = state === 'after';
   $('after').hidden = state !== 'after';
-  $('hint').textContent = state === 'on' ? 'はなしおわったら ボタンを おしてね' : state === 'after' ? (R.final ? 'じまくを よんで たしかめてね' : 'もじに ならなかったよ。もういちど はなしてね') : 'しかいが よんだら、ゲストが ボタンを おして はなす';
+  $('hint').textContent = state === 'on' ? 'はなしおわったら ボタンを おしてね' : state === 'after' ? (R.final ? 'じまくを よんで たしかめてね' : 'もじに ならなかったよ。もういちど はなしてね') : (isSolo() ? 'しつもんを こえに だして よんだら、ボタンを おして はなす' : 'インタビュアーが よんだら、ゲストが ボタンを おして はなす');
   $('okb').hidden = state === 'after' && !R.final;
 }
 // R.final：前の区切りまでで 決まった もじ
@@ -349,8 +360,8 @@ $('okb').addEventListener('click', function () {
   var text = R.final.trim();
   if (!text) return;
   S.answers[S.qi] = text;
-  enqueue({ id: uuid(), k: KEY, child: S.guest, reader: S.host, q: S.qi, lesson: CFG.lesson, question: CFG.questions[S.qi], text: text, sec: Math.round(R.sec) });
-  if (S.qi < 2) { S.qi++; playCM(); } else finishGuest();
+  enqueue({ id: uuid(), k: KEY, child: S.guest, reader: isSolo() ? 0 : S.host, q: S.qi, lesson: CFG.lesson, question: CFG.questions[S.qi], text: text, sec: Math.round(R.sec) });
+  if (S.qi < nQ() - 1) { S.qi++; playCM(); } else finishGuest();
 });
 function playCM() {
   show('sCM'); $('cmText').textContent = 'つぎは コーナー ' + (S.qi + 1);
@@ -417,15 +428,15 @@ function paintMail() {
 function finishGuest() {
   S.done.push(S.guest);
   show('sEnd');
-  $('endTitle').textContent = '📺 ほうそう しゅうりょう！ ゲスト ' + S.guest + 'ばんさん';
+  $('endTitle').textContent = '🎙 インタビュー しゅうりょう！ ゲスト ' + S.guest + 'ばんさん';
   var rc = $('recap'); rc.replaceChildren();
   S.answers.forEach(function (a, i) {
     var d = document.createElement('div'); var s = document.createElement('span');
     s.textContent = 'コーナー ' + (i + 1) + '：' + CFG.questions[i]; d.append(s, document.createTextNode(a)); rc.append(d);
   });
-  var both = S.done.indexOf(S.host) >= 0;
-  $('endText').textContent = both ? 'ふたりとも おわったよ。ありがとう！' : 'つぎは こうたい。' + S.host + 'ばんさんが ゲスト、' + S.guest + 'ばんさんが しかい。';
-  $('next').textContent = both ? 'さいしょの がめんに もどる' : '● こうたいして ほうそう スタート';
+  var both = isSolo() || S.done.indexOf(S.host) >= 0;
+  $('endText').textContent = isSolo() ? 'ありがとう！ つぎの ひとに わたしてね。' : both ? 'ふたりとも おわったよ。ありがとう！' : 'つぎは こうたい。' + S.host + 'ばんさんが ゲスト、' + S.guest + 'ばんさんが インタビュアー。';
+  $('next').textContent = both ? 'さいしょの がめんに もどる' : '● こうたいして インタビュー スタート';
   $('next').dataset.both = both ? '1' : '';
 }
 $('next').addEventListener('click', function () {
